@@ -3,3 +3,8 @@ target/
 .DS_Store
 .idea/
 *.iml
+
+# The global gitignore on this machine excludes docs/ everywhere, which silently
+# kept the architecture diagram out of this repo while git status read clean.
+# The diagram is the first thing on the README, so it ships.
+!docs/

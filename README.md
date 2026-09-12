@@ -3,16 +3,16 @@
 A wallet to wallet transfer, built so the failures are **runnable** rather than
 described.
 
-Companion code for [Design a Digital Wallet: The $100 Transfer That Disappears](https://youtu.be/fdrbDnkAruU)
-on [Code with Sam](https://www.youtube.com/@CodewithSam-Dev).
+![Digital wallet transfer architecture](docs/architecture.png)
 
-Everything the video claims is in here as code you can execute: the idempotent
+Everything this design claims is in here as code you can execute: the idempotent
 retry, the lost update, the fix, one atomic transaction, the transactional
 outbox, and the monitoring that tells you whether the money still adds up.
 
-## The architecture
+Companion code for [Design a Digital Wallet: The $100 Transfer That Disappears](https://youtu.be/fdrbDnkAruU)
+on [Code with Sam](https://www.youtube.com/@CodewithSam-Dev).
 
-![Digital wallet transfer architecture](docs/architecture.png)
+## Reading the diagram
 
 The numbers are the order a single transfer travels. The dashed lines into the
 observability strip are deliberately **unnumbered**: observability is not a step
