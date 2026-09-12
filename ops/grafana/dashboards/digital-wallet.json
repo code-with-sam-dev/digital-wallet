@@ -1,0 +1,235 @@
+{
+  "title": "Digital Wallet",
+  "uid": "digital-wallet",
+  "tags": [
+    "payments",
+    "code-with-sam"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 100,
+      "type": "text",
+      "title": "Read this first",
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "The top row is the only row that matters at three in the morning. **Ledger imbalance must be zero.** Everything below it is context for why, not a reason to relax if the top row is red.\n\nLatency is calculated from histogram buckets aggregated across instances. Prometheus warns that averaging precomputed summary quantiles is statistically meaningless, so this system publishes buckets and the percentile is calculated after aggregation."
+      }
+    },
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Ledger imbalance (must be zero)",
+      "description": "Signed sum of all ledger entries. Any value but zero means value was created or destroyed.",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "wallet_ledger_imbalance_minor",
+          "legendFormat": "imbalance",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Transfers stuck in a non terminal state",
+      "description": "Open too long means a lock, a dead worker, or a retry loop.",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "wallet_transfers_stuck",
+          "legendFormat": "stuck",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Oldest unpublished outbox row",
+      "description": "Age, not count. A small backlog that is not moving is the worse signal.",
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 4
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "wallet_outbox_oldest_unpublished_seconds",
+          "legendFormat": "age",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Transfer outcomes",
+      "description": "Refusals are not errors. Insufficient funds is the system working.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 10
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(wallet_transfers_total[1m]))",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Transfer latency, p50 / p95 / p99",
+      "description": "From histogram buckets, aggregated across instances before the percentile is taken.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 10
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(wallet_transfer_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Outbox backlog",
+      "description": "How many events the rest of the system has not been told about yet.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "wallet_outbox_unpublished",
+          "legendFormat": "unpublished",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Lock wait, p95",
+      "description": "Time spent waiting to lock the wallet rows. This is contention, measured.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(wallet_transfer_lock_wait_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95 lock wait",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Retries",
+      "description": "Transactions retried after a serialization failure or a deadlock. Retry is part of the design.",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(wallet_transfer_retries_total[5m])",
+          "legendFormat": "retries/s",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

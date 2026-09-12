@@ -1,0 +1,73 @@
+# What is worth waking someone for.
+#
+# Ordered deliberately. The first rule is not about latency or CPU; it is about
+# whether the money still adds up. For a payment system that is the only alert
+# that is unambiguously an incident every single time it fires.
+groups:
+  - name: financial-invariants
+    rules:
+      - alert: LedgerImbalance
+        # Every ledger entry belongs to a balanced pair, so the signed sum of
+        # all entries must be exactly zero. Any other value means value was
+        # created or destroyed, and no amount of latency being fine makes up
+        # for that.
+        expr: wallet_ledger_imbalance_minor != 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: The ledger does not balance
+          description: >-
+            Signed sum of all ledger entries is {{ $value }} minor units,
+            and it must be zero. Stop taking transfers and investigate before
+            anything else.
+
+      - alert: TransfersStuck
+        # Non terminal for minutes means something is holding transfers open:
+        # a lock, a crashed worker, a retry loop that never gives up.
+        expr: wallet_transfers_stuck > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Transfers are stuck in a non terminal state
+
+  - name: outbox
+    rules:
+      - alert: OutboxNotDraining
+        # AGE, not count. A backlog of five that is not moving is a worse
+        # signal than a backlog of five hundred that is draining, and only the
+        # age metric can tell the difference.
+        expr: wallet_outbox_oldest_unpublished_seconds > 60
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: The outbox relay is behind
+          description: >-
+            Oldest unpublished row is {{ $value }}s old. The money has
+            committed; the rest of the system has not been told.
+
+  - name: contention
+    rules:
+      - alert: HighTransferLatency
+        # Calculated from HISTOGRAM buckets, aggregated across instances first.
+        # Averaging precomputed summary quantiles across instances is
+        # statistically meaningless, which is why this system publishes buckets.
+        expr: >-
+          histogram_quantile(0.95,
+            sum(rate(wallet_transfer_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Transfer p95 is above one second
+
+      - alert: RetryStorm
+        expr: rate(wallet_transfer_retries_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Transactions are retrying repeatedly, which is contention

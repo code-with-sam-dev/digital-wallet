@@ -1,0 +1,76 @@
+# The whole system, in one command.
+#
+#   docker compose up --build
+#
+# Four services, because the video argues for four things: the money, the
+# database that guarantees it, the metrics that prove it still adds up, and the
+# dashboard that shows you.
+#
+#   wallet      http://localhost:8080
+#   prometheus  http://localhost:9090
+#   grafana     http://localhost:3001   (admin / admin)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: wallet-postgres
+    environment:
+      POSTGRES_DB: wallet
+      POSTGRES_USER: wallet
+      POSTGRES_PASSWORD: wallet
+    ports:
+      # 5434 on the host, not 5432. Anyone doing this kind of work already has
+      # a PostgreSQL on the default port, and a repository that refuses to
+      # start because of that is a repository nobody runs twice.
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wallet -d wallet"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  wallet:
+    build: .
+    container_name: wallet
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/wallet
+      DB_USER: wallet
+      DB_PASSWORD: wallet
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: wallet-prometheus
+    depends_on:
+      wallet:
+        condition: service_healthy
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: wallet-grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # Local demonstration only. Never do this anywhere real.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro

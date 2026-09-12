@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: digital-wallet
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5434/wallet}
+    username: ${DB_USER:wallet}
+    password: ${DB_PASSWORD:wallet}
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.codewithsam.wallet: INFO
+
+# Actuator exposes only what this demonstration needs. Nothing here is a
+# reasonable production posture; a real deployment puts the scrape endpoint on a
+# separate port and does not leave it open.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: digital-wallet
+
+wallet:
+  relay:
+    interval-ms: 1000
+  metrics:
+    refresh-ms: 5000
