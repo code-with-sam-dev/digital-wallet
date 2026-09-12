@@ -10,6 +10,32 @@ Everything the video claims is in here as code you can execute: the idempotent
 retry, the lost update, the fix, one atomic transaction, the transactional
 outbox, and the monitoring that tells you whether the money still adds up.
 
+## The architecture
+
+![Digital wallet transfer architecture](docs/architecture.png)
+
+The numbers are the order a single transfer travels. The dashed lines into the
+observability strip are deliberately **unnumbered**: observability is not a step
+the money passes through, it is the thing watching every step, and numbering it
+would teach the opposite model.
+
+The four boxes along the bottom right are not components. They are the failures
+that decide whether the rest of the design is real, and each one is answered by
+a test in this repository:
+
+| Failure | Where it is answered |
+|---|---|
+| The retry, same key same result | `IdempotencyTest` |
+| Two at once, the lost update | `ConcurrencyTest` |
+| Crash mid transfer, money nowhere | `InvariantsTest`, `OutboxTest` |
+| Publish uncertainty, sent twice | `OutboxTest.publicationIsAtLeastOnce` |
+
+This picture is not drawn for the README. It is generated from the same
+description the [video](https://youtu.be/fdrbDnkAruU) animates and the
+[design sheet](https://code-with-sam-dev.github.io/downloads/digital-wallet-design-sheet.pdf)
+prints, so the diagram here, the one on screen and the one in the PDF cannot
+drift apart.
+
 ## Run it
 
 ```bash
