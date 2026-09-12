@@ -3,7 +3,7 @@
 A wallet to wallet transfer, built so the failures are **runnable** rather than
 described.
 
-![Digital wallet transfer architecture](docs/architecture.png)
+![Digital wallet transfer architecture](assets/architecture.png)
 
 Everything this design claims is in here as code you can execute: the idempotent
 retry, the lost update, the fix, one atomic transaction, the transactional

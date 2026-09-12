@@ -4,7 +4,5 @@ target/
 .idea/
 *.iml
 
-# The global gitignore on this machine excludes docs/ everywhere, which silently
-# kept the architecture diagram out of this repo while git status read clean.
-# The diagram is the first thing on the README, so it ships.
-!docs/
+# docs/ is excluded globally on the authoring machine and stays excluded here.
+# Repository images live in assets/ instead.
